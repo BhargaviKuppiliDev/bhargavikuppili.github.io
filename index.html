@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bhargavi Kuppili — IAM & PAM Security Engineer</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=IBM+Plex+Mono:wght@400;500;600&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════
+   TOKENS & RESET
+═══════════════════════════════════════════════ */
+:root {
+  --bg:       #03080f;
+  --bg2:      #060d18;
+  --surface:  #0a1520;
+  --surface2: #0f1e2e;
+  --border:   rgba(168,85,247,0.18);
+  --glow:     rgba(168,85,247,0.3);
+
+  --violet:   #a855f7;
+  --violet2:  #7c3aed;
+  --pink:     #ec4899;
+  --teal:     #2dd4bf;
+  --gold:     #f59e0b;
+
+  --text:     #f0e8ff;
+  --muted:    #7a6d8a;
+
+  --card:     rgba(10,21,32,0.9);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Outfit',sans-serif;overflow-x:hidden;cursor:none}
+
+/* ═══════════════════════════════════════════════
+   LOADER
+═══════════════════════════════════════════════ */
+#loader{
+  position:fixed;inset:0;z-index:9999;
+  background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;
+  transition:opacity .9s ease, visibility .9s ease;
+}
+#loader.out{opacity:0;visibility:hidden;pointer-events:none}
+.ld-logo{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(1.4rem,4vw,2.2rem);
+  font-weight:900;
+  letter-spacing:.08em;
+  background:linear-gradient(135deg,var(--violet),var(--pink),var(--teal));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  animation:ldpulse 1.4s ease-in-out infinite;
+}
+.ld-track{width:220px;height:2px;background:var(--surface2);border-radius:2px;overflow:hidden}
+.ld-bar{height:100%;width:0;background:linear-gradient(90deg,var(--violet2),var(--violet),var(--pink));animation:ldfill 1.9s cubic-bezier(.4,0,.2,1) forwards}
+.ld-sub{font-family:'IBM Plex Mono',monospace;font-size:.7rem;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;animation:ldpulse 1.4s ease-in-out .3s infinite}
+@keyframes ldpulse{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes ldfill{to{width:100%}}
+
+/* ═══════════════════════════════════════════════
+   CURSOR
+═══════════════════════════════════════════════ */
+#cur{position:fixed;top:0;left:0;width:9px;height:9px;background:var(--violet);border-radius:50%;pointer-events:none;z-index:10000;transform:translate(-50%,-50%);transition:transform .08s,background .2s;box-shadow:0 0 14px var(--violet),0 0 28px rgba(168,85,247,.4)}
+#cur-ring{position:fixed;top:0;left:0;width:38px;height:38px;border:1.5px solid rgba(168,85,247,.45);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:all .14s ease}
+
+/* ═══════════════════════════════════════════════
+   PARTICLE CANVAS
+═══════════════════════════════════════════════ */
+#pcv{position:fixed;inset:0;z-index:0;pointer-events:none}
+
+/* ═══════════════════════════════════════════════
+   NAV
+═══════════════════════════════════════════════ */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:200;
+  padding:16px clamp(20px,5vw,64px);
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(3,8,15,.8);
+  backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+}
+.nav-logo{font-family:'Playfair Display',serif;font-weight:900;font-size:1.15rem;color:var(--violet);text-decoration:none;letter-spacing:.04em}
+.nav-links{display:flex;gap:28px;list-style:none}
+.nav-links a{color:var(--muted);text-decoration:none;font-size:.75rem;font-family:'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;transition:color .2s}
+.nav-links a:hover{color:var(--violet)}
+
+/* ═══════════════════════════════════════════════
+   LAYOUT SHELL
+═══════════════════════════════════════════════ */
+main{position:relative;z-index:1}
+section{padding:clamp(70px,10vw,130px) clamp(20px,6vw,80px);max-width:1200px;margin:0 auto}
+
+/* ═══════════════════════════════════════════════
+   HERO
+═══════════════════════════════════════════════ */
+#hero{
+  min-height:100vh;
+  display:flex;flex-direction:column;justify-content:center;
+  padding-top:110px;
+  position:relative;
+}
+.hero-eyebrow{
+  font-family:'IBM Plex Mono',monospace;font-size:.72rem;
+  letter-spacing:.25em;text-transform:uppercase;color:var(--teal);
+  margin-bottom:18px;opacity:0;animation:fup .8s ease 2s both;
+}
+.hero-name{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(3rem,9vw,7rem);
+  font-weight:900;line-height:1.0;
+  margin-bottom:14px;
+  background:linear-gradient(110deg,#fff 0%,#fff 25%,var(--violet) 45%,var(--pink) 62%,#fff 78%,#fff 100%);
+  background-size:260% auto;
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  animation:shimmer 4.5s linear 2.8s infinite, fup .9s ease 2.2s both;
+}
+@keyframes shimmer{to{background-position:-260% center}}
+.hero-title{
+  font-family:'IBM Plex Mono',monospace;font-size:clamp(.8rem,1.8vw,1rem);
+  color:var(--violet);letter-spacing:.08em;margin-bottom:26px;
+  opacity:0;animation:fup .8s ease 2.4s both;
+}
+.hero-desc{
+  max-width:580px;font-size:clamp(.9rem,1.8vw,1.05rem);line-height:1.75;
+  color:var(--muted);margin-bottom:42px;
+  opacity:0;animation:fup .8s ease 2.6s both;
+}
+.hero-ctas{display:flex;gap:14px;flex-wrap:wrap;opacity:0;animation:fup .8s ease 2.8s both}
+.btn-a{
+  padding:12px 30px;
+  background:linear-gradient(135deg,var(--violet2),var(--violet));
+  color:#fff;border:none;border-radius:4px;
+  font-family:'IBM Plex Mono',monospace;font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;
+  cursor:none;text-decoration:none;
+  box-shadow:0 0 22px rgba(168,85,247,.35);
+  transition:box-shadow .25s,transform .25s;
+}
+.btn-a:hover{transform:translateY(-2px);box-shadow:0 0 40px rgba(168,85,247,.6)}
+.btn-b{
+  padding:12px 30px;background:transparent;
+  color:var(--violet);border:1px solid var(--violet);border-radius:4px;
+  font-family:'IBM Plex Mono',monospace;font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;
+  cursor:none;text-decoration:none;
+  transition:background .2s,box-shadow .2s;
+}
+.btn-b:hover{background:rgba(168,85,247,.08);box-shadow:0 0 22px rgba(168,85,247,.2)}
+
+.hero-stats{
+  display:flex;gap:44px;flex-wrap:wrap;
+  margin-top:64px;padding-top:40px;
+  border-top:1px solid var(--border);
+  opacity:0;animation:fup .8s ease 3s both;
+}
+.stat-n{font-family:'Playfair Display',serif;font-size:clamp(2rem,4.5vw,2.8rem);font-weight:900;color:var(--violet);line-height:1}
+.stat-l{font-size:.75rem;color:var(--muted);letter-spacing:.06em;margin-top:4px}
+
+/* ═══════════════════════════════════════════════
+   3-D FLOATING CARD
+═══════════════════════════════════════════════ */
+.fc-wrap{
+  position:absolute;right:clamp(16px,6vw,120px);top:50%;
+  transform:translateY(-50%);
+  perspective:900px;
+  opacity:0;animation:fin 1s ease 3.2s both;
+}
+.fc{
+  width:clamp(170px,21vw,250px);
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:28px 20px;
+  text-align:center;
+  backdrop-filter:blur(20px);
+  box-shadow:0 10px 48px rgba(0,0,0,.55),0 0 30px rgba(168,85,247,.08);
+  animation:rot3d 7s ease-in-out infinite;
+  transform-style:preserve-3d;
+}
+@keyframes rot3d{
+  0%  {transform:rotateY(-10deg) rotateX(5deg) translateY(0px)}
+  25% {transform:rotateY(5deg) rotateX(-3deg) translateY(-14px)}
+  50% {transform:rotateY(10deg) rotateX(5deg) translateY(-7px)}
+  75% {transform:rotateY(-5deg) rotateX(3deg) translateY(-16px)}
+  100%{transform:rotateY(-10deg) rotateX(5deg) translateY(0px)}
+}
+/* avatar with ripples */
+.fc-av{
+  width:70px;height:70px;
+  background:linear-gradient(135deg,var(--violet2),var(--pink));
+  border-radius:50%;margin:0 auto 14px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Playfair Display',serif;font-weight:900;font-size:1.4rem;color:#fff;
+  position:relative;
+  box-shadow:0 0 20px rgba(168,85,247,.4);
+}
+.fc-av::before,.fc-av::after,.fc-av .r3{
+  content:'';position:absolute;inset:-2px;border-radius:50%;
+  border:1.5px solid rgba(168,85,247,.45);
+  animation:rpl 2.8s ease-out infinite;
+}
+.fc-av::after{animation-delay:.9s}
+.fc-av .r3{animation-delay:1.8s}
+@keyframes rpl{0%{transform:scale(1);opacity:.65}100%{transform:scale(2.5);opacity:0}}
+.fc-name{font-family:'Playfair Display',serif;font-weight:700;font-size:.92rem;color:var(--text);margin-bottom:4px}
+.fc-role{font-size:.68rem;color:var(--violet);font-family:'IBM Plex Mono',monospace;letter-spacing:.04em;margin-bottom:14px}
+.fc-chips{display:flex;flex-wrap:wrap;gap:5px;justify-content:center}
+.chip{background:rgba(168,85,247,.1);border:1px solid rgba(168,85,247,.2);color:var(--violet);font-size:.62rem;font-family:'IBM Plex Mono',monospace;padding:3px 8px;border-radius:3px}
+
+/* ═══════════════════════════════════════════════
+   SECTION HEADINGS
+═══════════════════════════════════════════════ */
+.sec-hd{margin-bottom:58px}
+.sec-eye{font-family:'IBM Plex Mono',monospace;font-size:.7rem;letter-spacing:.24em;color:var(--teal);text-transform:uppercase;margin-bottom:10px}
+.sec-title{font-family:'Playfair Display',serif;font-size:clamp(2rem,5vw,3.4rem);font-weight:900;line-height:1.05;color:var(--text)}
+.sec-title em{color:var(--violet);font-style:normal}
+.sec-line{width:44px;height:3px;background:linear-gradient(90deg,var(--violet),var(--pink));margin-top:14px;border-radius:2px}
+
+/* ═══════════════════════════════════════════════
+   SCROLL REVEAL
+═══════════════════════════════════════════════ */
+.reveal{opacity:0;transition:opacity .75s ease,transform .75s ease}
+.reveal.fu{transform:translateY(44px)}
+.reveal.sl{transform:translateX(-54px)}
+.reveal.sr{transform:translateX(54px)}
+.reveal.on{opacity:1!important;transform:none!important}
+
+/* ═══════════════════════════════════════════════
+   MARQUEE
+═══════════════════════════════════════════════ */
+.mq-wrap{padding:36px 0;overflow:hidden;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.mq-track{display:flex;gap:52px;animation:mq 28s linear infinite;white-space:nowrap;width:max-content}
+.mq-item{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:.82rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:18px}
+.mq-item i{color:var(--violet);font-style:normal;font-size:.55rem}
+@keyframes mq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* ═══════════════════════════════════════════════
+   EXPERIENCE / TIMELINE
+═══════════════════════════════════════════════ */
+.tl{position:relative;padding-left:30px}
+.tl::before{content:'';position:absolute;left:0;top:10px;bottom:0;width:1px;background:linear-gradient(to bottom,var(--violet),transparent)}
+.tl-item{position:relative;margin-bottom:60px;padding-left:32px}
+.tl-item::before{content:'';position:absolute;left:-38px;top:10px;width:10px;height:10px;background:var(--violet);border-radius:50%;box-shadow:0 0 14px var(--violet)}
+.job-hd{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:6px}
+.job-title{font-family:'Playfair Display',serif;font-size:1.15rem;font-weight:700;color:var(--text)}
+.job-period{font-family:'IBM Plex Mono',monospace;font-size:.7rem;color:var(--violet);letter-spacing:.04em;background:rgba(168,85,247,.1);border:1px solid var(--border);padding:3px 10px;border-radius:20px}
+.job-co{font-size:.84rem;color:var(--teal);margin-bottom:14px;font-weight:500}
+.job-ul{list-style:none}
+.job-ul li{position:relative;padding-left:18px;font-size:.88rem;line-height:1.68;color:var(--muted);margin-bottom:8px}
+.job-ul li::before{content:'▸';position:absolute;left:0;color:var(--violet);font-size:.68rem;top:2px}
+
+/* ═══════════════════════════════════════════════
+   SKILLS
+═══════════════════════════════════════════════ */
+.sk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:28px}
+.sk-cat{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:28px 24px;backdrop-filter:blur(14px)}
+.sk-cat-t{font-family:'IBM Plex Mono',monospace;font-size:.78rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--teal);margin-bottom:22px}
+.sk-row{margin-bottom:16px}
+.sk-nr{display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:6px;color:var(--text)}
+.sk-pct{color:var(--violet);font-family:'IBM Plex Mono',monospace;font-size:.72rem}
+.sk-bar{height:4px;background:var(--surface2);border-radius:4px;overflow:hidden}
+.sk-fill{height:100%;background:linear-gradient(90deg,var(--violet2),var(--violet),var(--pink));border-radius:4px;width:0;transition:width 1.3s cubic-bezier(.4,0,.2,1)}
+
+/* ═══════════════════════════════════════════════
+   PROJECT / TOOL CARDS
+═══════════════════════════════════════════════ */
+.pr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:22px}
+.pr-card{
+  background:var(--card);border:1px solid var(--border);border-radius:14px;
+  padding:28px 24px;position:relative;overflow:hidden;
+  backdrop-filter:blur(14px);
+  transition:transform .3s,box-shadow .3s;
+}
+.pr-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--violet2),var(--violet),var(--pink),var(--teal));
+  transform:scaleX(0);transform-origin:left;
+  transition:transform .45s ease;
+}
+.pr-card:hover::before{transform:scaleX(1)}
+.pr-card:hover{transform:translateY(-5px);box-shadow:0 18px 50px rgba(0,0,0,.45),0 0 25px rgba(168,85,247,.12)}
+.pr-icon{font-size:1.8rem;margin-bottom:14px}
+.pr-name{font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;color:var(--text);margin-bottom:6px}
+.pr-years{font-size:.7rem;color:var(--violet);font-family:'IBM Plex Mono',monospace;letter-spacing:.06em;margin-bottom:10px}
+.pr-desc{font-size:.84rem;line-height:1.6;color:var(--muted)}
+
+/* ═══════════════════════════════════════════════
+   CERTIFICATIONS
+═══════════════════════════════════════════════ */
+.cert-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px}
+.cert-card{
+  background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:24px 20px;position:relative;overflow:hidden;
+  backdrop-filter:blur(12px);
+  transition:transform .3s,box-shadow .3s;
+}
+.cert-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--violet2),var(--pink),var(--teal));
+  transform:scaleX(0);transform-origin:left;
+  transition:transform .4s ease;
+}
+.cert-card:hover::before{transform:scaleX(1)}
+.cert-card:hover{transform:translateY(-4px);box-shadow:0 16px 40px rgba(0,0,0,.4),0 0 20px rgba(168,85,247,.1)}
+.cert-src{font-size:.68rem;font-family:'IBM Plex Mono',monospace;color:var(--teal);letter-spacing:.1em;margin-bottom:8px;text-transform:uppercase}
+.cert-name{font-family:'Playfair Display',serif;font-size:.95rem;font-weight:700;color:var(--text);line-height:1.35}
+
+/* ═══════════════════════════════════════════════
+   EDUCATION
+═══════════════════════════════════════════════ */
+.edu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:22px}
+.edu-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:26px 22px;backdrop-filter:blur(12px);position:relative;overflow:hidden}
+.edu-card::after{content:'';position:absolute;bottom:-20px;right:-20px;width:90px;height:90px;background:radial-gradient(circle,rgba(168,85,247,.06),transparent);border-radius:50%}
+.edu-deg{font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:var(--text);margin-bottom:6px}
+.edu-inst{font-size:.82rem;color:var(--teal);margin-bottom:8px;line-height:1.4}
+.edu-yr{font-size:.72rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:12px}
+.edu-grade{display:inline-block;background:rgba(45,212,191,.1);border:1px solid rgba(45,212,191,.22);color:var(--teal);font-family:'IBM Plex Mono',monospace;font-size:.76rem;padding:3px 12px;border-radius:20px}
+
+/* ═══════════════════════════════════════════════
+   CONTACT  — pulsing ripple rings
+═══════════════════════════════════════════════ */
+#contact{position:relative}
+.ct-ripple-wrap{
+  position:absolute;right:clamp(16px,8vw,160px);top:50%;
+  transform:translateY(-50%);
+  pointer-events:none;
+}
+.ct-av{
+  width:92px;height:92px;
+  background:linear-gradient(135deg,var(--violet2),var(--pink));
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Playfair Display',serif;font-size:1.7rem;font-weight:900;color:#fff;
+  position:relative;z-index:1;
+  box-shadow:0 0 34px rgba(168,85,247,.45);
+}
+.ct-ring{
+  position:absolute;border-radius:50%;
+  border:1.5px solid rgba(168,85,247,.4);
+  top:50%;left:50%;
+  transform:translate(-50%,-50%) scale(1);
+  animation:ctrpl 3.2s ease-out infinite;
+}
+.ct-ring:nth-child(2){animation-delay:1.06s}
+.ct-ring:nth-child(3){animation-delay:2.12s}
+@keyframes ctrpl{
+  0%  {width:92px;height:92px;opacity:.6}
+  100%{width:280px;height:280px;opacity:0}
+}
+.ct-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:560px}
+.ct-item{
+  background:var(--card);border:1px solid var(--border);border-radius:10px;
+  padding:18px 20px;display:flex;align-items:center;gap:14px;
+  text-decoration:none;
+  transition:border-color .2s,transform .2s;
+}
+.ct-item:hover{border-color:var(--violet);transform:translateY(-3px)}
+.ct-ico{font-size:1.3rem;flex-shrink:0}
+.ct-lbl{font-size:.68rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px}
+.ct-val{font-size:.82rem;color:var(--text);font-weight:500}
+
+/* ═══════════════════════════════════════════════
+   FOOTER
+═══════════════════════════════════════════════ */
+footer{text-align:center;padding:38px 20px;border-top:1px solid var(--border);color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:.74rem;letter-spacing:.05em}
+footer span{color:var(--violet)}
+
+/* ═══════════════════════════════════════════════
+   KEYFRAMES
+═══════════════════════════════════════════════ */
+@keyframes fup{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+@keyframes fin{from{opacity:0}to{opacity:1}}
+
+/* ═══════════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════════ */
+@media(max-width:900px){
+  .fc-wrap{display:none}
+  .ct-ripple-wrap{display:none}
+  .nav-links{display:none}
+}
+@media(max-width:600px){
+  .hero-stats{gap:22px}
+  .ct-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ LOADER ═══ -->
+<div id="loader">
+  <div class="ld-logo">BK · SECURITY</div>
+  <div class="ld-track"><div class="ld-bar"></div></div>
+  <div class="ld-sub">Initialising portfolio…</div>
+</div>
+
+<!-- ═══ CURSOR ═══ -->
+<div id="cur"></div>
+<div id="cur-ring"></div>
+
+<!-- ═══ PARTICLES ═══ -->
+<canvas id="pcv"></canvas>
+
+<!-- ═══ NAV ═══ -->
+<nav>
+  <a href="#hero" class="nav-logo">BK</a>
+  <ul class="nav-links">
+    <li><a href="#experience">Experience</a></li>
+    <li><a href="#tools">Tools</a></li>
+    <li><a href="#skills">Skills</a></li>
+    <li><a href="#certs">Certs</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+</nav>
+
+<main>
+
+<!-- ═══ HERO ═══ -->
+<section id="hero">
+  <div class="hero-eyebrow">IAM &amp; PAM Security Engineer · 4+ Years</div>
+  <h1 class="hero-name">Bhargavi<br>Kuppili</h1>
+  <div class="hero-title">▸ Technical Analyst · SailPoint IIQ · SSH PrivX PAM</div>
+  <p class="hero-desc">
+    IAM &amp; PAM Security Engineer safeguarding critical infrastructure through identity governance and privileged access controls. Expert in SailPoint IdentityIQ 8.3, SSH PrivX, and streamlining access management for enterprise MNC environments.
+  </p>
+  <div class="hero-ctas">
+    <a href="mailto:Kuppilibhargavi2000@gmail.com" class="btn-a">Get In Touch</a>
+    <a href="https://linkedin.com/in/bhargavikuppili" target="_blank" class="btn-b">LinkedIn ↗</a>
+  </div>
+  <div class="hero-stats">
+    <div><div class="stat-n">4+</div><div class="stat-l">Years in IAM/PAM</div></div>
+    <div><div class="stat-n">L3</div><div class="stat-l">Support Level</div></div>
+    <div><div class="stat-n">2</div><div class="stat-l">Major Platforms</div></div>
+    <div><div class="stat-n">6</div><div class="stat-l">Certifications</div></div>
+    <div><div class="stat-n">P1–P4</div><div class="stat-l">Incident Coverage</div></div>
+  </div>
+
+  <!-- 3-D card -->
+  <div class="fc-wrap">
+    <div class="fc">
+      <div class="fc-av">
+        BK
+        <div class="r3"></div>
+      </div>
+      <div class="fc-name">Bhargavi Kuppili</div>
+      <div class="fc-role">IAM · PAM · SailPoint</div>
+      <div class="fc-chips">
+        <span class="chip">SailPoint IIQ</span>
+        <span class="chip">SSH PrivX</span>
+        <span class="chip">IAM</span>
+        <span class="chip">PAM</span>
+        <span class="chip">AD</span>
+        <span class="chip">Azure</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ MARQUEE ═══ -->
+<div class="mq-wrap">
+  <div class="mq-track" id="mqt"></div>
+</div>
+
+<!-- ═══ EXPERIENCE ═══ -->
+<section id="experience">
+  <div class="sec-hd reveal fu">
+    <div class="sec-eye">Career</div>
+    <h2 class="sec-title">Work <em>Experience</em></h2>
+    <div class="sec-line"></div>
+  </div>
+  <div class="tl">
+
+    <div class="tl-item reveal sl">
+      <div class="job-hd">
+        <div class="job-title">Technical Analyst</div>
+        <div class="job-period">2021 — Present</div>
+      </div>
+      <div class="job-co">Infosys · Hyderabad &nbsp;<span style="color:var(--muted);font-size:.78rem;">— Client: KONE Corporation (Finland-based MNC)</span></div>
+      <ul class="job-ul" style="margin-top:6px;">
+
+        <li style="color:var(--violet);font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;font-family:'IBM Plex Mono',monospace;padding-left:0;margin-bottom:10px;margin-top:4px;">&#9632; SailPoint IIQ — IAM (L3 Support &amp; Development · 4.2 Years)</li>
+        <li>Provided L2/L3 technical support for SailPoint IdentityIQ 8.3, resolving issues related to access provisioning, authentication, and identity lifecycle management</li>
+        <li>Managed application onboarding and integration activities within the SailPoint IdentityIQ environment</li>
+        <li>Monitored scheduled tasks, jobs, and workflows to ensure smooth IAM operations</li>
+        <li>Worked on Advanced Analytics and report creation for audit, compliance, and access management requirements</li>
+        <li>Created, modified, and maintained business/technical roles and entitlements in SailPoint IdentityIQ</li>
+        <li>Updated and managed user/application attributes through object pages and Active Directory integrations</li>
+        <li>Troubleshot and resolved account-level access and entitlement-related issues</li>
+        <li>Performed bulk operations including role addition/removal, bulk role creation, and dynamic role updates</li>
+        <li>Managed bulk owner and approver workgroup updates along with bulk entitlement creation activities</li>
+        <li>Experienced in handling disconnected application-based role operations and access management processes</li>
+
+        <li style="color:var(--violet);font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;font-family:'IBM Plex Mono',monospace;padding-left:0;margin-bottom:10px;margin-top:18px;">&#9632; SSH PrivX — PAM (L3 Support &amp; Development · 2 Years)</li>
+        <li>Provided end-to-end support for P1, P2, P3, and P4 incidents/service requests, ensuring timely resolution and SLA adherence</li>
+        <li>PrivX installation and implementation, production upgrades, and production server OS upgrades</li>
+        <li>Role creation/deletion, server onboarding/offboarding, account-level access debugging, and certificate monitoring/maintenance</li>
+        <li>Executed onboarding of Windows and Linux servers into PAM and performed Bypass Access Closure activities post onboarding</li>
+        <li>Managed decommissioning of servers based on application owner requests and audit/report-based requirements</li>
+
+        <li style="color:var(--violet);font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;font-family:'IBM Plex Mono',monospace;padding-left:0;margin-bottom:10px;margin-top:18px;">&#9632; ITSM &amp; Supporting Tools</li>
+        <li>RemedyForce &amp; ServiceNow (2 years each) — ticket creation, resolution, monitoring, reporting, and distribution across SAP, Salesforce, and application teams</li>
+        <li>Active Directory — basic operations supporting identity and access workflows</li>
+      </ul>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══ TOOL / PROJECT CARDS ═══ -->
+<section id="tools">
+  <div class="sec-hd reveal fu">
+    <div class="sec-eye">Expertise</div>
+    <h2 class="sec-title">Core <em>Platforms</em></h2>
+    <div class="sec-line"></div>
+  </div>
+  <div class="pr-grid">
+
+    <div class="pr-card reveal fu">
+      <div class="pr-icon">🔐</div>
+      <div class="pr-name">SailPoint IdentityIQ</div>
+      <div class="pr-years">4.2 Years · L3 Support &amp; Development</div>
+      <div class="pr-desc">Full IAM lifecycle management — onboarding, role engineering, entitlement governance, analytics, and enterprise access operations on IIQ 8.3.</div>
+    </div>
+
+    <div class="pr-card reveal fu">
+      <div class="pr-icon">🛡️</div>
+      <div class="pr-name">SSH PrivX (PAM)</div>
+      <div class="pr-years">2 Years · L3 Support &amp; Development</div>
+      <div class="pr-desc">Privileged Access Management covering installation, upgrades, server onboarding/offboarding, certificate maintenance, and P1–P4 incident response.</div>
+    </div>
+
+    <div class="pr-card reveal fu">
+      <div class="pr-icon">📋</div>
+      <div class="pr-name">ServiceNow &amp; RemedyForce</div>
+      <div class="pr-years">2 Years Each · ITSM Operations</div>
+      <div class="pr-desc">Ticket lifecycle management, multi-team distribution, SLA adherence, and operational reporting across SAP, Salesforce, and application teams.</div>
+    </div>
+
+    <div class="pr-card reveal fu">
+      <div class="pr-icon">☁️</div>
+      <div class="pr-name">MS Azure &amp; AWS</div>
+      <div class="pr-years">Cloud Platforms</div>
+      <div class="pr-desc">Cloud identity integration and access management operations supporting enterprise IAM in hybrid cloud environments.</div>
+    </div>
+
+    <div class="pr-card reveal fu">
+      <div class="pr-icon">🗂️</div>
+      <div class="pr-name">Active Directory</div>
+      <div class="pr-years">Directory Services</div>
+      <div class="pr-desc">User and application attribute management, AD integrations for identity provisioning, and account-level access troubleshooting.</div>
+    </div>
+
+    <div class="pr-card reveal fu">
+      <div class="pr-icon">🐍</div>
+      <div class="pr-name">Python &amp; Java</div>
+      <div class="pr-years">Programming</div>
+      <div class="pr-desc">Scripting and automation support for IAM workflows, data processing with Spyder, and web technologies including HTML &amp; CSS.</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══ SKILLS ═══ -->
+<section id="skills">
+  <div class="sec-hd reveal fu">
+    <div class="sec-eye">Proficiency</div>
+    <h2 class="sec-title">Technical <em>Skills</em></h2>
+    <div class="sec-line"></div>
+  </div>
+  <div class="sk-grid">
+
+    <div class="sk-cat reveal fu">
+      <div class="sk-cat-t">Identity &amp; Access Management</div>
+      <div class="sk-row"><div class="sk-nr"><span>SailPoint IIQ 8.3</span><span class="sk-pct">95%</span></div><div class="sk-bar"><div class="sk-fill" data-w="95"></div></div></div>
+      <div class="sk-row"><div class="sk-nr"><span>Role Engineering</span><span class="sk-pct">90%</span></div><div class="sk-bar"><div class="sk-fill" data-w="90"></div></div></div>
+      <div class="sk-row"><div class="sk-nr"><span>Identity Lifecycle Mgmt</span><span class="sk-pct">92%</span></div><div class="sk-bar"><div class="sk-fill" data-w="92"></div></div></div>
+      <div class="sk-row"><div class="sk-nr"><span>Entitlement Management</span><span class="sk-pct">88%</span></div><div class="sk-bar"><div class="sk-fill" data-w="88"></div></div></div>
+      <div class="sk-row"><div class="sk-nr"><span>Access Provisioning</span><span class="sk-pct">91%</span></div><div class="sk-bar"><div class="sk-fill" data-w="91"></div></div></div>
+    </div>
+
+    <div class="sk-cat reveal fu">
+      <div class="sk-cat-t">Privileged Access Management</div>
+      <div class="sk-row"><div class="sk-nr"><span>SSH PrivX</span><span class="sk-pct">90%</span></div><div class="sk-bar"><div class="sk-fill" data-w="90"></div></div></div>
+      <div class="sk-row"><div class="sk-nr"><span>PAM Implementation</span><span class="sk-pct">87%</span></div><div class="sk-bar"><div class="sk-fill" data-w="87"></div></div></div>
+      <div class="sk-row"><div class="sk-nr"><span>Server Onboarding/Offboarding</span><span class="sk-pct">89%</span></div><div class="sk-bar"><div class="sk-fill" data-w="89"></div></div></div>
+      <div class="sk-row"><div class="sk-nr"><span>Incident Management (P1–P4)</span><span class="sk-pct">92%</span></div><div class="sk-bar"><div class="sk-fill" data-w="92"></div></div></div>
+      <div class="sk-row"><div class="sk-nr"><span>Certificate Monitoring</span><span class="sk-pct">85%</span></div><div class="sk-bar"><div class="sk-fill" data-w="85"></div></div></div>
+    </div>
+
+    <div class="sk-cat reveal fu">
+      <div class="sk-cat-t">Infrastructure &amp; Tools</div>
+      <div class="sk-row"><div class="sk-nr"><span>Active Directory</span><span class="sk-pct">80%</span></div><div class="sk-bar"><div class="sk-fill" data-w="80"></div></div></div>
+      <div class="sk-row"><div class="sk-nr"><span>MS Azure / AWS</span><span class="sk-pct">75%</span></div><div class="sk-bar"><div class="sk-fill" data-w="75"></div></div></div>
+      <div class="sk-row"><div class="sk-nr"><span>ServiceNow</span><span class="sk-pct">86%</span></div><div class="sk-bar"><div class="sk-fill" data-w="86"></div></div></div>
+      <div class="sk-row"><div class="sk-nr"><span>RemedyForce</span><span class="sk-pct">84%</span></div><div class="sk-bar"><div class="sk-fill" data-w="84"></div></div></div>
+      <div class="sk-row"><div class="sk-nr"><span>Windows / Linux</span><span class="sk-pct">82%</span></div><div class="sk-bar"><div class="sk-fill" data-w="82"></div></div></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══ CERTIFICATIONS ═══ -->
+<section id="certs">
+  <div class="sec-hd reveal fu">
+    <div class="sec-eye">Verified</div>
+    <h2 class="sec-title">Certifi<em>cations</em></h2>
+    <div class="sec-line"></div>
+  </div>
+  <div class="cert-grid">
+    <div class="cert-card reveal fu">
+      <div class="cert-src">Infosys</div>
+      <div class="cert-name">Certified Associate in Identity and Access Management</div>
+    </div>
+    <div class="cert-card reveal fu">
+      <div class="cert-src">Infosys</div>
+      <div class="cert-name">Certified SailPoint IIQ Professional</div>
+    </div>
+    <div class="cert-card reveal fu">
+      <div class="cert-src">Infosys</div>
+      <div class="cert-name">Certified Associate in Cyber Security</div>
+    </div>
+    <div class="cert-card reveal fu">
+      <div class="cert-src">Infosys</div>
+      <div class="cert-name">Certified Kanban Practitioner</div>
+    </div>
+    <div class="cert-card reveal fu">
+      <div class="cert-src">Purdue University</div>
+      <div class="cert-name">Applied Cybersecurity Essentials</div>
+    </div>
+    <div class="cert-card reveal fu">
+      <div class="cert-src">Cisco</div>
+      <div class="cert-name">Cybersecurity Essentials</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ EDUCATION ═══ -->
+<section id="education">
+  <div class="sec-hd reveal fu">
+    <div class="sec-eye">Academic</div>
+    <h2 class="sec-title">Edu<em>cation</em></h2>
+    <div class="sec-line"></div>
+  </div>
+  <div class="edu-grid">
+    <div class="edu-card reveal sl">
+      <div class="edu-deg">B.Tech — Computer Science &amp; Engineering</div>
+      <div class="edu-inst">Maharaj Vijayaram Gajapathiraj College of Engineering (Autonomous), Vizianagaram</div>
+      <div class="edu-yr">2017 – 2021</div>
+      <span class="edu-grade">8.2 CGPA</span>
+    </div>
+    <div class="edu-card reveal fu">
+      <div class="edu-deg">Intermediate — Science (MPC)</div>
+      <div class="edu-inst">Sri Chaitanya Junior College, Visakhapatnam</div>
+      <div class="edu-yr">2015 – 2017</div>
+      <span class="edu-grade">9.23 GPA</span>
+    </div>
+    <div class="edu-card reveal sr">
+      <div class="edu-deg">10th Standard</div>
+      <div class="edu-inst">Divine Saviour English Medium School</div>
+      <div class="edu-yr">Completed 2015</div>
+      <span class="edu-grade">9.2 GPA</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ CONTACT ═══ -->
+<section id="contact">
+  <div class="sec-hd reveal fu">
+    <div class="sec-eye">Let's Connect</div>
+    <h2 class="sec-title">Get in <em>Touch</em></h2>
+    <div class="sec-line"></div>
+  </div>
+  <div class="ct-grid reveal fu">
+    <a href="mailto:Kuppilibhargavi2000@gmail.com" class="ct-item">
+      <div class="ct-ico">✉️</div>
+      <div><div class="ct-lbl">Email</div><div class="ct-val">Kuppilibhargavi2000@gmail.com</div></div>
+    </a>
+    <a href="tel:+917288921234" class="ct-item">
+      <div class="ct-ico">📱</div>
+      <div><div class="ct-lbl">Phone</div><div class="ct-val">+91 72889 21234</div></div>
+    </a>
+    <a href="https://linkedin.com" target="_blank" class="ct-item">
+      <div class="ct-ico">💼</div>
+      <div><div class="ct-lbl">LinkedIn</div><div class="ct-val">Bhargavi Kuppili</div></div>
+    </a>
+    <a href="#" class="ct-item">
+      <div class="ct-ico">📍</div>
+      <div><div class="ct-lbl">Location</div><div class="ct-val">Hyderabad, India</div></div>
+    </a>
+  </div>
+
+  <!-- pulsing ripple avatar -->
+  <div class="ct-ripple-wrap">
+    <div style="position:relative;width:280px;height:280px;display:flex;align-items:center;justify-content:center">
+      <div class="ct-ring"></div>
+      <div class="ct-ring"></div>
+      <div class="ct-ring"></div>
+      <div class="ct-av">BK</div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <p>Crafted for <span>Bhargavi Kuppili</span> · IAM &amp; PAM Security Engineer · Hyderabad, India</p>
+</footer>
+
+<!-- ═══════════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════════ -->
+<script>
+/* ── LOADER ── */
+window.addEventListener('load', () => {
+  setTimeout(() => document.getElementById('loader').classList.add('out'), 2100);
+});
+
+/* ── CURSOR ── */
+const cur = document.getElementById('cur');
+const curR = document.getElementById('cur-ring');
+let mx = -200, my = -200, rx = -200, ry = -200;
+
+document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+document.addEventListener('mousedown', () => cur.style.transform = 'translate(-50%,-50%) scale(2)');
+document.addEventListener('mouseup',   () => cur.style.transform = 'translate(-50%,-50%) scale(1)');
+
+(function animCur() {
+  cur.style.left = mx + 'px'; cur.style.top = my + 'px';
+  rx += (mx - rx) * 0.11; ry += (my - ry) * 0.11;
+  curR.style.left = rx + 'px'; curR.style.top = ry + 'px';
+  requestAnimationFrame(animCur);
+})();
+
+document.querySelectorAll('a,button').forEach(el => {
+  el.addEventListener('mouseenter', () => {
+    curR.style.transform = 'translate(-50%,-50%) scale(1.7)';
+    curR.style.borderColor = 'rgba(236,72,153,.65)';
+  });
+  el.addEventListener('mouseleave', () => {
+    curR.style.transform = 'translate(-50%,-50%) scale(1)';
+    curR.style.borderColor = 'rgba(168,85,247,.45)';
+  });
+});
+
+/* ── PARTICLES ── */
+const cv = document.getElementById('pcv');
+const cx = cv.getContext('2d');
+let W, H, pts = [], pmx = -9e5, pmy = -9e5;
+
+function resize() { W = cv.width = innerWidth; H = cv.height = innerHeight; }
+resize(); window.addEventListener('resize', resize);
+document.addEventListener('mousemove', e => { pmx = e.clientX; pmy = e.clientY; });
+
+class Pt {
+  constructor() { this.reset(); }
+  reset() {
+    this.x = Math.random() * W; this.y = Math.random() * H;
+    this.vx = (Math.random() - .5) * .45; this.vy = (Math.random() - .5) * .45;
+    this.r = Math.random() * 1.5 + .4; this.a = Math.random() * .45 + .15;
+  }
+  step() {
+    this.x += this.vx; this.y += this.vy;
+    if (this.x < 0 || this.x > W) this.vx *= -1;
+    if (this.y < 0 || this.y > H) this.vy *= -1;
+  }
+}
+for (let i = 0; i < 88; i++) pts.push(new Pt());
+
+(function draw() {
+  cx.clearRect(0, 0, W, H);
+  for (let i = 0; i < pts.length; i++) {
+    for (let j = i + 1; j < pts.length; j++) {
+      const dx = pts[i].x - pts[j].x, dy = pts[i].y - pts[j].y;
+      const d = Math.sqrt(dx*dx + dy*dy);
+      if (d < 115) {
+        cx.beginPath(); cx.moveTo(pts[i].x, pts[i].y); cx.lineTo(pts[j].x, pts[j].y);
+        cx.strokeStyle = `rgba(168,85,247,${.14*(1-d/115)})`; cx.lineWidth = .55; cx.stroke();
+      }
+    }
+    // mouse threads
+    const dx = pts[i].x - pmx, dy = pts[i].y - pmy;
+    const d = Math.sqrt(dx*dx + dy*dy);
+    if (d < 145) {
+      cx.beginPath(); cx.moveTo(pts[i].x, pts[i].y); cx.lineTo(pmx, pmy);
+      cx.strokeStyle = `rgba(236,72,153,${.22*(1-d/145)})`; cx.lineWidth = .75; cx.stroke();
+    }
+    pts[i].step();
+    cx.beginPath(); cx.arc(pts[i].x, pts[i].y, pts[i].r, 0, Math.PI*2);
+    cx.fillStyle = `rgba(168,85,247,${pts[i].a})`; cx.fill();
+  }
+  requestAnimationFrame(draw);
+})();
+
+/* ── MARQUEE ── */
+const brands = ['KONE Corporation','SailPoint IIQ','SSH PrivX','ServiceNow','RemedyForce','MS Azure','AWS','Active Directory','Infosys','Purdue University','Cisco'];
+const mqt = document.getElementById('mqt');
+const all = [...brands, ...brands, ...brands, ...brands];
+mqt.innerHTML = all.map(b => `<span class="mq-item">${b} <i>✦</i></span>`).join('');
+
+/* ── SCROLL REVEAL ── */
+const revEls = document.querySelectorAll('.reveal');
+new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('on'); } });
+}, { threshold: .11, rootMargin: '0px 0px -36px 0px' }).observe
+  ? (() => {
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('on'); } });
+      }, { threshold: .11, rootMargin: '0px 0px -36px 0px' });
+      revEls.forEach(el => io.observe(el));
+    })()
+  : revEls.forEach(el => el.classList.add('on'));
+
+/* ── SKILL BARS ── */
+const bars = document.querySelectorAll('.sk-fill');
+new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.style.width = e.target.dataset.w + '%'; } });
+}, { threshold: .3 }).observe
+  ? (() => {
+      const bo = new IntersectionObserver((entries) => {
+        entries.forEach(e => { if (e.isIntersecting) { e.target.style.width = e.target.dataset.w + '%'; } });
+      }, { threshold: .3 });
+      bars.forEach(b => bo.observe(b));
+    })()
+  : bars.forEach(b => b.style.width = b.dataset.w + '%');
+
+/* ── STAGGER DELAYS ── */
+document.querySelectorAll('.sk-grid .sk-cat,.cert-grid .cert-card,.pr-grid .pr-card,.edu-grid .edu-card').forEach((el, i) => {
+  el.style.transitionDelay = `${(i % 3) * 0.13}s`;
+});
+</script>
+</body>
+</html>
